@@ -1,0 +1,5 @@
+com\mycompany\crudcomandasjfx\App.class
+module-info.class
+com\mycompany\crudcomandasjfx\PrimaryController.class
+models\Pedido.class
+models\Producto.class

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1080.0" prefWidth="1920.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.crudcomandasjfx.PrimaryController">
+   <children>
+      <VBox alignment="CENTER" layoutX="-3.0" prefHeight="112.0" prefWidth="1926.0" spacing="5.0">
+         <children>
+            <Label text="Restaurante Muchachos de Artacho">
+               <font>
+                  <Font size="48.0" />
+               </font>
+               <VBox.margin>
+                  <Insets top="30.0" />
+               </VBox.margin>
+            </Label>
+            <Label text="CRUD comandas">
+               <font>
+                  <Font size="36.0" />
+               </font>
+            </Label>
+         </children>
+      </VBox>
+      <Label fx:id="tituloPendiente" layoutX="120.0" layoutY="215.0" text="Pedidos pendientes: x">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <Label alignment="BOTTOM_CENTER" layoutX="1111.0" layoutY="215.0" text="Carta">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <HBox alignment="CENTER" layoutY="250.0" prefHeight="648.0" prefWidth="1920.0" spacing="300.0">
+         <children>
+            <VBox prefHeight="682.0" prefWidth="691.0">
+               <children>
+                  <TableView fx:id="tablaPedidos" prefHeight="703.0" prefWidth="691.0">
+                    <columns>
+                      <TableColumn fx:id="colIdPedidos" prefWidth="85.0" text="id" />
+                      <TableColumn fx:id="colProductoPedidos" prefWidth="214.0" text="producto" />
+                        <TableColumn fx:id="colFechaPedidos" prefWidth="155.0" text="fecha" />
+                        <TableColumn fx:id="colPrecioPedidos" prefWidth="79.0" text="precio" />
+                        <TableColumn fx:id="colPendientePedidos" prefWidth="79.0" text="pendiente" />
+                        <TableColumn fx:id="colRecogidoPedidos" prefWidth="79.0" text="recogido" />
+                    </columns>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </TableView>
+               </children>
+            </VBox>
+            <VBox prefHeight="682.0" prefWidth="691.0">
+               <children>
+                  <TableView fx:id="tablaProductos" prefHeight="676.0" prefWidth="691.0">
+                     <columns>
+                        <TableColumn fx:id="colIdProducto" prefWidth="85.0" text="id" />
+                        <TableColumn fx:id="colNombreProducto" prefWidth="296.0" text="nombre" />
+                        <TableColumn fx:id="colTipoProducto" prefWidth="218.0" text="tipo" />
+                        <TableColumn fx:id="colPrecioProducto" prefWidth="91.0" text="precio" />
+                     </columns>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </TableView>
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+   </children>
+</AnchorPane>

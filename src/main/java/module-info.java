@@ -8,6 +8,6 @@ module com.mycompany.crudcomandasjfx {
     requires java.persistence;
     
     opens com.mycompany.crudcomandasjfx to javafx.fxml, org.hibernate.orm.core, java.sql;
-    
+    opens models;
     exports com.mycompany.crudcomandasjfx;
 }

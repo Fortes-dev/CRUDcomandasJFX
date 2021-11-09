@@ -9,32 +9,31 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1080.0" prefWidth="1920.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.crudcomandasjfx.PrimaryController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1080.0" prefWidth="1920.0" style="-fx-background-image: url(/img/fondo.jpg);" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.crudcomandasjfx.PrimaryController">
    <children>
       <VBox alignment="CENTER" layoutX="-3.0" prefHeight="112.0" prefWidth="1926.0" spacing="5.0">
          <children>
-            <Label text="Restaurante Muchachos de Artacho">
+            <Label text="Restaurante Muchachos de Artacho" textFill="WHITE">
                <font>
-                  <Font size="48.0" />
+                  <Font name="System Bold" size="48.0" />
                </font>
                <VBox.margin>
                   <Insets top="30.0" />
                </VBox.margin>
             </Label>
-            <Label text="CRUD comandas">
+            <Label text="CRUD comandas" textFill="WHITE">
                <font>
                   <Font size="36.0" />
                </font>
             </Label>
          </children>
       </VBox>
-      <Label fx:id="tituloPendiente" layoutX="120.0" layoutY="215.0" text="Pedidos pendientes: x">
+      <Label fx:id="tituloPendiente" layoutX="120.0" layoutY="215.0" text="Pedidos pendientes: x" textFill="WHITE">
          <font>
             <Font size="24.0" />
          </font>
       </Label>
-      <Label alignment="BOTTOM_CENTER" layoutX="1111.0" layoutY="215.0" text="Carta">
+      <Label alignment="BOTTOM_CENTER" layoutX="1111.0" layoutY="215.0" text="Carta" textFill="WHITE">
          <font>
             <Font size="24.0" />
          </font>

@@ -6,12 +6,35 @@
 package com.mycompany.crudcomandasjfx;
 
 import java.net.URL;
+import java.sql.Date;
 import java.util.ResourceBundle;
+import java.util.Timer;
+import java.util.TimerTask;
+import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import static javafx.scene.input.MouseButton.PRIMARY;
+import static javafx.scene.input.MouseButton.SECONDARY;
+import javafx.scene.input.MouseEvent;
+import models.Pedido;
+import models.Producto;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 /**
  * FXML Controller class
@@ -23,36 +46,234 @@ public class PrimaryController implements Initializable {
     @FXML
     private Label tituloPendiente;
     @FXML
-    private TableView<?> tablaPedidos;
+    private TableView<Pedido> tablaPedidos;
     @FXML
-    private TableColumn<?, ?> colIdPedidos;
+    private TableColumn<Pedido, Long> colIdPedidos;
     @FXML
-    private TableColumn<?, ?> colProductoPedidos;
+    private TableColumn<Pedido, String> colProductoPedidos;
     @FXML
-    private TableColumn<?, ?> colFechaPedidos;
+    private TableColumn<Pedido, Date> colFechaPedidos;
     @FXML
-    private TableColumn<?, ?> colPrecioPedidos;
+    private TableColumn<Pedido, Double> colPrecioPedidos;
     @FXML
-    private TableColumn<?, ?> colPendientePedidos;
+    private TableColumn<Pedido, String> colPendientePedidos;
     @FXML
-    private TableColumn<?, ?> colRecogidoPedidos;
+    private TableColumn<Pedido, String> colRecogidoPedidos;
     @FXML
-    private TableView<?> tablaProductos;
+    private TableView<Producto> tablaProductos;
     @FXML
-    private TableColumn<?, ?> colIdProducto;
+    private TableColumn<Producto, Long> colIdProducto;
     @FXML
-    private TableColumn<?, ?> colNombreProducto;
+    private TableColumn<Producto, String> colNombreProducto;
     @FXML
-    private TableColumn<?, ?> colTipoProducto;
+    private TableColumn<Producto, String> colTipoProducto;
     @FXML
-    private TableColumn<?, ?> colPrecioProducto;
+    private TableColumn<Producto, Double> colPrecioProducto;
+
+    static java.util.Date utilDate = new java.util.Date();
+    static long lnMilisegundos = utilDate.getTime();
+    private static final java.sql.Date DATE = new java.sql.Date(lnMilisegundos);
+
+    private static Session s;
+
+    static {
+        s = HibernateUtil.getSessionFactory().openSession();
+    }
+
+    private static final Query LISTCARTA = s.createQuery("FROM Producto");
+    private static final Query PRODUCTOID = s.createQuery("FROM Producto pr where pr.id=:id");
+    private static final Query PEDIDOID = s.createQuery("FROM Pedido p where p.id=:id");
+    private static final Query PENDIENTEHOY = s.createQuery("FROM Pedido p where p.fecha=:fecha");
+    private static final Query PENDIENTESINRECOGER = s.createQuery("FROM Pedido p where p.fecha=:fecha and p.recogido='no'");
 
     /**
      * Initializes the controller class.
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        // TODO
-    }    
+        
+        task();
+        initTableProducto();
+
+        tablaPedidos.setOnMouseClicked((MouseEvent e) -> {
+
+            if (e.getButton().equals(PRIMARY)) {
+                var alerta = new Alert(Alert.AlertType.CONFIRMATION);
+                alerta.setTitle("Recoger pedido");
+                alerta.setHeaderText("RECOGER");
+                alerta.setGraphic(new ImageView(new Image(this.getClass().getResource("/img/burger.png").toString())));
+                alerta.setContentText("¿Desea recoger el pedido? \n[id=" + tablaPedidos.getSelectionModel().getSelectedItem().getId()
+                        + "\nProducto=" + tablaPedidos.getSelectionModel().getSelectedItem().getProducto().getNombre()
+                        + "\nFecha=" + tablaPedidos.getSelectionModel().getSelectedItem().getFecha() + "]");
+
+                alerta.showAndWait();
+
+                if (alerta.getResult().equals(ButtonType.OK)) {
+
+                    Long id;
+
+                    if (tablaPedidos.getSelectionModel().getSelectedItem() != null) {
+                        id = tablaPedidos.getSelectionModel().getSelectedItem().getId();
+
+                        PEDIDOID.setParameter("id", id);
+
+                        var pedido = (Pedido) PEDIDOID.list().get(0);
+
+                        pedido.setPendiente("no");
+                        pedido.setRecogido("si");
+
+                        Transaction t = s.beginTransaction();
+                        s.update(pedido);
+                        t.commit();
+
+                        initTablePedido();
+                    }
+                }
+
+            } else if (e.getButton().equals(SECONDARY)) {
+                var alerta = new Alert(Alert.AlertType.CONFIRMATION);
+                alerta.setTitle("Eliminar pedido");
+                alerta.setHeaderText("ELIMINAR");
+                ((Button) alerta.getDialogPane().lookupButton(ButtonType.OK)).setText("Eliminar");
+                alerta.setGraphic(new ImageView(new Image(this.getClass().getResource("/img/borrar.png").toString())));
+                alerta.setContentText("¿Desea eliminar el pedido? \n[id=" + tablaPedidos.getSelectionModel().getSelectedItem().getId()
+                        + "\nProducto=" + tablaPedidos.getSelectionModel().getSelectedItem().getProducto().getNombre()
+                        + "\nFecha=" + tablaPedidos.getSelectionModel().getSelectedItem().getFecha() + "]");
+                alerta.showAndWait();
+                if (alerta.getResult().equals(ButtonType.OK)) {
+
+                    Long id;
+
+                    if (tablaPedidos.getSelectionModel().getSelectedItem() != null) {
+                        id = tablaPedidos.getSelectionModel().getSelectedItem().getId();
+                        PEDIDOID.setParameter("id", id);
+
+                        var pedido = (Pedido) PEDIDOID.list().get(0);
+
+                        Transaction t = s.beginTransaction();
+                        s.remove(pedido);
+                        t.commit();
+
+                        initTablePedido();
+                    }
+                }
+            }
+
+        });
+
+        tablaProductos.setOnMouseClicked((MouseEvent e) -> {
+            if (e.getButton().equals(PRIMARY)) {
+                var alerta = new Alert(Alert.AlertType.CONFIRMATION);
+                alerta.setTitle("Comanda");
+                alerta.setHeaderText("PEDIDO");
+                alerta.setGraphic(new ImageView(new Image(this.getClass().getResource("/img/pedido.png").toString())));
+                alerta.setContentText("Usted va a pedir este producto:\n\n" + tablaProductos.getSelectionModel().getSelectedItem().toString()
+                        + "\n\n¿Desea realizar el pedido?");
+                alerta.showAndWait();
+                if (alerta.getResult().equals(ButtonType.OK)) {
+
+                    Long id;
+
+                    if (tablaProductos.getSelectionModel().getSelectedItem() != null) {
+                        id = tablaProductos.getSelectionModel().getSelectedItem().getId();
+                        PRODUCTOID.setParameter("id", id);
+
+                        var producto = (Producto) PRODUCTOID.list().get(0);
+                        var pedido = new Pedido();
+
+                        pedido.setFecha(DATE);
+                        pedido.setProducto(producto);
+                        pedido.setPrecio(producto.getPrecio());
+                        pedido.setPendiente("si");
+                        pedido.setRecogido("no");
+
+                        Transaction t = s.beginTransaction();
+                        s.save(pedido);
+                        t.commit();
+
+                        var confirmacion = new Alert(Alert.AlertType.INFORMATION);
+                        confirmacion.setTitle("Confirmacion pedido");
+                        confirmacion.setHeaderText("CONFIRMACION");
+                        confirmacion.setGraphic(new ImageView(new Image(this.getClass().getResource("/img/confirm.png").toString())));
+                        confirmacion.setContentText("Su pedido:\n\n" + producto.toString() + "\n\nse ha realizado con éxito.");
+                        confirmacion.show();
+                        initTablePedido();
+                    }
+                }
+            }
+        }
+        );
+    }
+
+    public void initTablePedido() {
+
+        tablaPedidos.getItems().clear();
+
+        ObservableList<Pedido> listaPed = FXCollections.observableArrayList();
+
+        colIdPedidos.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colProductoPedidos.setCellValueFactory((CellDataFeatures<Pedido, String> p) -> new ReadOnlyObjectWrapper(p.getValue().getProducto().getNombre()));
+        colFechaPedidos.setCellValueFactory(new PropertyValueFactory<>("fecha"));
+        colPrecioPedidos.setCellValueFactory(new PropertyValueFactory<>("precio"));
+        colPendientePedidos.setCellValueFactory(new PropertyValueFactory<>("pendiente"));
+        colRecogidoPedidos.setCellValueFactory(new PropertyValueFactory<>("recogido"));
+
+        PENDIENTEHOY.setParameter("fecha", DATE);
+
+        listaPed.addAll(PENDIENTEHOY.list());
+
+        tablaPedidos.setItems(listaPed);
+        
+        PENDIENTESINRECOGER.setParameter("fecha", DATE);
+        tituloPendiente.setText("Pedidos pendientes: "+PENDIENTESINRECOGER.list().size());
+        
+        tablaPedidos.setRowFactory(row -> new TableRow<Pedido>() {
+            @Override
+            protected void updateItem(Pedido item, boolean empty) {
+                super.updateItem(item, empty);
+                
+                if(item == null) {
+                    setStyle("");
+                } else if(item.isRecogido().equals("si")) {
+                    setStyle("-fx-background-color: #baffba;");
+                } else {
+                    setStyle("-fx-background-color: #ffd7d1;");
+                }
+                
+            }
+        });
+    }
+
+    public void initTableProducto() {
+        ObservableList<Producto> listaProd = FXCollections.observableArrayList();
+
+        tablaProductos.setItems(listaProd);
+
+        colIdProducto.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colNombreProducto.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+        colTipoProducto.setCellValueFactory(new PropertyValueFactory<>("tipo"));
+        colPrecioProducto.setCellValueFactory(new PropertyValueFactory<>("precio"));
+
+        listaProd.addAll(LISTCARTA.list());
+
+    }
     
+    public void task() {
+        var timer = new Timer();
+        var task = new TimerTask() {
+            @Override
+            public void run() {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        initTablePedido();
+                    }
+                    
+                });
+            }
+            
+        };
+        timer.scheduleAtFixedRate(task, 0, 5000);
+    }
+
 }

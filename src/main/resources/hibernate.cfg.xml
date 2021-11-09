@@ -13,7 +13,8 @@ and open the template in the editor.
         <property name="connection.password"></property>
         <property name="hibernate.show_sql">true</property>
 
-        
+        <mapping class="models.Pedido"/>
+        <mapping class="models.Producto"/>
 
     </session-factory>
 </hibernate-configuration>

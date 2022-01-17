@@ -5,8 +5,10 @@
  */
 package com.mycompany.crudcomandasjfx;
 
+import java.awt.Dimension;
 import java.net.URL;
 import java.sql.Date;
+import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -14,6 +16,7 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
@@ -30,8 +33,19 @@ import javafx.scene.image.ImageView;
 import static javafx.scene.input.MouseButton.PRIMARY;
 import static javafx.scene.input.MouseButton.SECONDARY;
 import javafx.scene.input.MouseEvent;
+import javax.swing.JFrame;
 import models.Pedido;
 import models.Producto;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
+import net.sf.jasperreports.swing.JRViewer;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -70,10 +84,6 @@ public class PrimaryController implements Initializable {
     @FXML
     private TableColumn<Producto, Double> colPrecioProducto;
 
-    static java.util.Date utilDate = new java.util.Date();
-    static long lnMilisegundos = utilDate.getTime();
-    private static final java.sql.Date DATE = new java.sql.Date(lnMilisegundos);
-
     private static Session s;
 
     static {
@@ -85,14 +95,18 @@ public class PrimaryController implements Initializable {
     private static final Query PEDIDOID = s.createQuery("FROM Pedido p where p.id=:id");
     private static final Query PENDIENTEHOY = s.createQuery("FROM Pedido p where p.fecha=:fecha");
     private static final Query PENDIENTESINRECOGER = s.createQuery("FROM Pedido p where p.fecha=:fecha and p.recogido='no'");
+    @FXML
+    private Button btnPedidos;
+    @FXML
+    private Button btnCarta;
 
     /**
      * Initializes the controller class.
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        
-        task();
+
+        initTablePedido();
         initTableProducto();
 
         tablaPedidos.setOnMouseClicked((MouseEvent e) -> {
@@ -180,8 +194,8 @@ public class PrimaryController implements Initializable {
 
                         var producto = (Producto) PRODUCTOID.list().get(0);
                         var pedido = new Pedido();
-
-                        pedido.setFecha(DATE);
+                        var date = fechaHoy();
+                        pedido.setFecha(date);
                         pedido.setProducto(producto);
                         pedido.setPrecio(producto.getPrecio());
                         pedido.setPendiente("si");
@@ -218,28 +232,30 @@ public class PrimaryController implements Initializable {
         colPendientePedidos.setCellValueFactory(new PropertyValueFactory<>("pendiente"));
         colRecogidoPedidos.setCellValueFactory(new PropertyValueFactory<>("recogido"));
 
-        PENDIENTEHOY.setParameter("fecha", DATE);
+        var date = fechaHoy();
+        
+        PENDIENTEHOY.setParameter("fecha", date);
 
         listaPed.addAll(PENDIENTEHOY.list());
 
         tablaPedidos.setItems(listaPed);
-        
-        PENDIENTESINRECOGER.setParameter("fecha", DATE);
-        tituloPendiente.setText("Pedidos pendientes: "+PENDIENTESINRECOGER.list().size());
-        
+
+        PENDIENTESINRECOGER.setParameter("fecha", date);
+        tituloPendiente.setText("Pedidos pendientes: " + PENDIENTESINRECOGER.list().size());
+
         tablaPedidos.setRowFactory(row -> new TableRow<Pedido>() {
             @Override
             protected void updateItem(Pedido item, boolean empty) {
                 super.updateItem(item, empty);
-                
-                if(item == null) {
+
+                if (item == null) {
                     setStyle("");
-                } else if(item.isRecogido().equals("si")) {
+                } else if (item.isRecogido().equals("si")) {
                     setStyle("-fx-background-color: #baffba;");
                 } else {
                     setStyle("-fx-background-color: #ffd7d1;");
                 }
-                
+
             }
         });
     }
@@ -257,23 +273,80 @@ public class PrimaryController implements Initializable {
         listaProd.addAll(LISTCARTA.list());
 
     }
-    
-    public void task() {
-        var timer = new Timer();
-        var task = new TimerTask() {
-            @Override
-            public void run() {
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        initTablePedido();
-                    }
-                    
-                });
-            }
-            
-        };
-        timer.scheduleAtFixedRate(task, 0, 5000);
+
+    private Date fechaHoy() {
+        var utilDate = new java.util.Date();
+        long lnMilisegundos = utilDate.getTime();
+
+        return new java.sql.Date(lnMilisegundos);
     }
 
+    @FXML
+    private void btnPedidos(ActionEvent event) {
+        String archivo = "pedidos.jrxml";
+
+        try {
+            var parameters = new HashMap();
+            var date = fechaHoy();
+            System.out.println(date);
+            
+            parameters.put("fechaHoy", date);
+
+            JasperReport informe = JasperCompileManager.compileReport(archivo);
+            JasperPrint impresion = JasperFillManager.fillReport(informe, parameters, Conexion.getConexion());
+
+            JRViewer visor = new JRViewer(impresion);
+
+            JFrame ventanaInforme = new JFrame("Pedidos");
+            ventanaInforme.getContentPane().add(visor);
+            ventanaInforme.pack();
+            ventanaInforme.setVisible(true);
+            ventanaInforme.setMinimumSize(new Dimension(1500, 1500));
+
+            JRPdfExporter exportador = new JRPdfExporter();
+            exportador.setExporterInput(new SimpleExporterInput(impresion));
+            exportador.setExporterOutput(new SimpleOutputStreamExporterOutput("informe_pedidos.pdf"));
+
+            var configuracion = new SimplePdfExporterConfiguration();
+            exportador.setConfiguration(configuracion);
+
+            exportador.exportReport();
+
+        } catch (JRException ex) {
+            System.out.println(ex);
+        }
+    }
+
+    @FXML
+    private void btnCarta(ActionEvent event) {
+        String archivo = "carta.jrxml";
+
+        try {
+            var parameters = new HashMap();
+            parameters.put("Carta", "Carta Muchachos de Artacho");
+
+            JasperReport informe = JasperCompileManager.compileReport(archivo);
+            JasperPrint impresion = JasperFillManager.fillReport(informe, parameters, Conexion.getConexion());
+
+            JRViewer visor = new JRViewer(impresion);
+
+            JFrame ventanaInforme = new JFrame("Carta");
+            ventanaInforme.getContentPane().add(visor);
+            ventanaInforme.pack();
+            ventanaInforme.setVisible(true);
+            ventanaInforme.setMinimumSize(new Dimension(1500, 900));
+
+            JRPdfExporter exportador = new JRPdfExporter();
+            exportador.setExporterInput(new SimpleExporterInput(impresion));
+            exportador.setExporterOutput(new SimpleOutputStreamExporterOutput("carta.pdf"));
+
+            var configuracion = new SimplePdfExporterConfiguration();
+            exportador.setConfiguration(configuracion);
+
+            exportador.exportReport();
+
+        } catch (JRException ex) {
+            System.out.println(ex);
+        }
+    }
 }
